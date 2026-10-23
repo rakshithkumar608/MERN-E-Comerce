@@ -1,146 +1,194 @@
-import React from 'react'
-import { IoLogoInstagram } from 'react-icons/io';
-import { RiTwitterXLine } from 'react-icons/ri';
-import { TbBrandMeta } from 'react-icons/tb';
-import { Link } from 'react-router-dom'
-import { FiPhoneCall} from 'react-icons/fi';
+import React, { useState } from "react";
+import { IoLogoInstagram } from "react-icons/io";
+import { RiTwitterXLine } from "react-icons/ri";
+import { TbBrandMeta } from "react-icons/tb";
+import { FiPhoneCall, FiMail, FiMapPin } from "react-icons/fi";
+import { Link } from "react-router-dom";
+import axios from "axios";
+import { toast } from "sonner";
+
+const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:9000";
 
 const Footer = () => {
+  const [email, setEmail] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubscribe = async (e) => {
+    e.preventDefault();
+    if (!email) return;
+
+    try {
+      setSubmitting(true);
+      const res = await axios.post(`${API_URL}/api/subscribers`, { email });
+      toast.success(res.data.message || "Thank you for subscribing!");
+      setEmail("");
+    } catch (err) {
+      toast.error(
+        err.response?.data?.message || "Failed to subscribe. Please try again."
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
-    <footer className="border-t py-12">
-      <div className="container mx-auto grid grid-cols-1 md:grid-cols-4 gap-8 px-4 lg:px-8">
-        
+    <footer className="border-t bg-gray-50/50 py-12 mt-16">
+      <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 px-4 lg:px-8">
         {/* Newsletter Section */}
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Newsletter</h3>
+          <h3 className="text-lg font-bold text-gray-900 tracking-tight">Newsletter</h3>
           <p className="text-gray-600 text-sm leading-relaxed">
-            Be the first to hear about new products, exclusive events, and
-            online offers.
+            Be the first to hear about new products, exclusive events, and online offers.
           </p>
-          <p className="font-medium text-sm text-gray-700 mb-4">
+          <p className="font-semibold text-sm text-gray-800">
             Sign up and get 10% off on your first order.
           </p>
 
           {/* Newsletter form */}
-          <form className="flex flex-col sm:flex-row gap-2 mt-6">
+          <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-2 mt-4">
             <input
               type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="Enter your email"
-              className="flex-1 p-3 text-sm border border-gray-300 rounded-md sm:rounded-r-none focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all  mt-4"
+              className="flex-1 p-3 text-sm border border-gray-300 rounded-md sm:rounded-r-none focus:outline-none focus:ring-2 focus:ring-black bg-white"
               required
             />
-          <button
-  type="submit"
-  className="mt-4 bg-black text-white px-6 py-3 text-sm rounded-md sm:rounded-l-none hover:bg-gray-800 transition-all whitespace-nowrap"
->
-  Subscribe
-</button>
-
+            <button
+              type="submit"
+              disabled={submitting}
+              className="bg-black text-white px-5 py-3 text-sm font-semibold rounded-md sm:rounded-l-none hover:bg-gray-800 transition-all disabled:opacity-50"
+            >
+              {submitting ? "Joining..." : "Subscribe"}
+            </button>
           </form>
         </div>
 
         {/* Shop links */}
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Shop</h3>
-          <ul className="space-y-3 text-gray-600">
+          <h3 className="text-lg font-bold text-gray-900 tracking-tight">Shop Collections</h3>
+          <ul className="space-y-2.5 text-gray-600">
             <li>
-              <Link to="#" className="text-sm hover:text-gray-800 transition-colors">
-                Men's Top Wear
+              <Link
+                to="/collections/all?gender=Men"
+                className="text-sm hover:text-black transition-colors"
+              >
+                Men's Fashion
               </Link>
             </li>
             <li>
-              <Link to="#" className="text-sm hover:text-gray-800 transition-colors">
-                Women's Top Wear
+              <Link
+                to="/collections/all?gender=Women"
+                className="text-sm hover:text-black transition-colors"
+              >
+                Women's Fashion
               </Link>
             </li>
             <li>
-              <Link to="#" className="text-sm hover:text-gray-800 transition-colors">
-                Men's Bottom Wear
+              <Link
+                to="/collections/all?category=Top Wear"
+                className="text-sm hover:text-black transition-colors"
+              >
+                Top Wear & Shirts
               </Link>
             </li>
             <li>
-              <Link to="#" className="text-sm hover:text-gray-800 transition-colors">
-                Women's Bottom Wear
-              </Link>
-            </li>
-          </ul>
-        </div>
-
-        {/* Support links */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Support</h3>
-          <ul className="space-y-3 text-gray-600">
-            <li>
-              <Link to="#" className="text-sm hover:text-gray-800 transition-colors">
-                Contact Us
+              <Link
+                to="/collections/all?category=Bottom Wear"
+                className="text-sm hover:text-black transition-colors"
+              >
+                Bottom Wear & Trousers
               </Link>
             </li>
             <li>
-              <Link to="#" className="text-sm hover:text-gray-800 transition-colors">
-                About Us
-              </Link>
-            </li>
-            <li>
-              <Link to="#" className="text-sm hover:text-gray-800 transition-colors">
-                FAQs
-              </Link>
-            </li>
-            <li>
-              <Link to="#" className="text-sm hover:text-gray-800 transition-colors">
-                Features
+              <Link
+                to="/collections/all"
+                className="text-sm hover:text-black transition-colors"
+              >
+                All Products
               </Link>
             </li>
           </ul>
         </div>
 
-        {/* Follow us */}
+        {/* Support & Policies */}
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Follow Us</h3>
-          
-          {/* Social Media Icons */}
-          <div className="flex items-center space-x-4 mb-6">
+          <h3 className="text-lg font-bold text-gray-900 tracking-tight">Customer Support</h3>
+          <ul className="space-y-2.5 text-gray-600">
+            <li>
+              <Link to="/profile" className="text-sm hover:text-black transition-colors">
+                My Account
+              </Link>
+            </li>
+            <li>
+              <Link to="/my-orders" className="text-sm hover:text-black transition-colors">
+                Order Tracking
+              </Link>
+            </li>
+            <li>
+              <span className="text-sm text-gray-500">Shipping Policy (Worldwide)</span>
+            </li>
+            <li>
+              <span className="text-sm text-gray-500">30-Day Easy Returns</span>
+            </li>
+            <li>
+              <span className="text-sm text-gray-500">Privacy & Terms</span>
+            </li>
+          </ul>
+        </div>
+
+        {/* Contact info & socials */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-bold text-gray-900 tracking-tight">Get in Touch</h3>
+          <ul className="space-y-2.5 text-sm text-gray-600">
+            <li className="flex items-center gap-2">
+              <FiPhoneCall className="text-gray-800" />
+              <span>+1 (234) 567-980</span>
+            </li>
+            <li className="flex items-center gap-2">
+              <FiMail className="text-gray-800" />
+              <span>support@martify.com</span>
+            </li>
+            <li className="flex items-center gap-2">
+              <FiMapPin className="text-gray-800" />
+              <span>Worldwide Shipping Center</span>
+            </li>
+          </ul>
+
+          <div className="pt-2 flex items-center space-x-3">
             <a
-              href="https://www.facebook.com/"
+              href="https://facebook.com"
               target="_blank"
-              rel="noopener noreferrer"
-              className="text-gray-600 hover:text-blue-400 transition-colors"
+              rel="noreferrer"
+              className="p-2 bg-gray-200 rounded-full hover:bg-gray-300 text-gray-800 transition"
+              aria-label="Facebook"
             >
               <TbBrandMeta className="h-5 w-5" />
             </a>
             <a
-              href="https://www.instagram.com/"
+              href="https://instagram.com"
               target="_blank"
-              rel="noopener noreferrer"
-              className="text-gray-600 hover:text-pink-800 transition-colors"
+              rel="noreferrer"
+              className="p-2 bg-gray-200 rounded-full hover:bg-gray-300 text-gray-800 transition"
+              aria-label="Instagram"
             >
               <IoLogoInstagram className="h-5 w-5" />
             </a>
             <a
-              href="https://www.twitter.com/"
+              href="https://twitter.com"
               target="_blank"
-              rel="noopener noreferrer"
-              className="text-gray-600 hover:text-gray-800 transition-colors"
+              rel="noreferrer"
+              className="p-2 bg-gray-200 rounded-full hover:bg-gray-300 text-gray-800 transition"
+              aria-label="Twitter"
             >
               <RiTwitterXLine className="h-5 w-5" />
             </a>
           </div>
-
-          {/* Contact Info */}
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-gray-800">Call Us</p>
-            <p className="text-sm text-gray-600 flex items-center">
-              <FiPhoneCall className="inline-block mr-2 h-4 w-4" />
-              0123-456-789
-            </p>
-          </div>
         </div>
       </div>
 
-      {/* Footer Bottom */}
-      <div className="container mx-auto mt-12 px-4 lg:px-8 border-t border-gray-200 pt-6">
-        <p className="text-gray-500 text-sm text-center">
-          © 2025, CompileTab. All Rights Reserved.
-        </p>
+      <div className="border-t mt-12 pt-6 text-center text-xs text-gray-500">
+        &copy; {new Date().getFullYear()} Martify E-Commerce. All rights reserved.
       </div>
     </footer>
   );

@@ -1,91 +1,71 @@
-import React from 'react'
-import Hero from '../components/Layout/Hero.jsx'
-import GenderCollectionSection from '../components/Products/GenderCollectionSection.jsx'
-import NewArrivals from '../components/Products/NewArrivals.jsx'
-import ProductDetails from '../components/Products/ProductDetails.jsx'
-import ProductGrid from '../components/Products/ProductGrid.jsx'
-import FeaturedCollection from '../components/Products/FeaturedCollection.jsx'
-import FeaturesSection from '../components/Products/FeaturesSection.jsx'
-
-
-
-const placeholderProducts = [
-  {
-    _id: 1,
-    name: "Women's Oversized  Casual Cotton Shirt",
-    price: 1149,
-    images: [{url:"https://m.media-amazon.com/images/I/812AodWhRmL._SX569_.jpg"}]
-  },
-   {
-    _id: 2,
-    name: " Oversized Shirt for Women ",
-    price: 479,
-    images: [{url:"https://m.media-amazon.com/images/I/61Su7JLpk0L._SY879_.jpg"}]
-  },
-   {
-    _id: 3,
-    name: "rytras Cotton Regular Fit Top",
-    price: 499,
-    images: [{url:"https://m.media-amazon.com/images/I/713wEcCIKRL._SY879_.jpg"}]
-  },
-   {
-    _id: 4,
-    name: "GRECIILOOKS Shirt for Women Stylish",
-    price: 479,
-    images: [{url:"https://m.media-amazon.com/images/I/71f3SP2zNKL._SY879_.jpg"}]
-  },
-   {
-    _id: 5,
-    name: "HIGH STAR Oversized Fit Shirt",
-    price: 690,
-    images: [{url:"https://m.media-amazon.com/images/I/61GH9f2HQAL._SY741_.jpg"}]
-  },
-     {
-    _id: 6,
-    name: "DEIDAD Women's Regular Fit Top",
-    price: 299,
-    images: [{url:"https://m.media-amazon.com/images/I/71DOkPEFUML._SY879_.jpg"}]
-  },
-     {
-    _id: 7,
-    name: "Knit Shirts Tops for Women",
-    price: 349,
-    images: [{url:"https://m.media-amazon.com/images/I/71wz3uReS2L._SY879_.jpg"}]
-  },
-
-     {
-    _id: 8,
-    name: "GRECIILOOKS Co Ord Set for Women",
-    price: 650,
-    images: [{url:"https://m.media-amazon.com/images/I/41qGWj4zZ1L.jpg"}]
-  },
-]
-
-
+import React, { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import Hero from "../components/Layout/Hero.jsx";
+import GenderCollectionSection from "../components/Products/GenderCollectionSection.jsx";
+import NewArrivals from "../components/Products/NewArrivals.jsx";
+import ProductDetails from "../components/Products/ProductDetails.jsx";
+import ProductGrid from "../components/Products/ProductGrid.jsx";
+import FeaturedCollection from "../components/Products/FeaturedCollection.jsx";
+import FeaturesSection from "../components/Products/FeaturesSection.jsx";
+import {
+  fetchBestSeller,
+  fetchProductsByFilters,
+} from "../redux/slices/productsSlice.js";
 
 const Home = () => {
+  const dispatch = useDispatch();
+  const { products, bestSeller, loading } = useSelector(
+    (state) => state.products
+  );
+
+  useEffect(() => {
+    dispatch(fetchBestSeller());
+    dispatch(
+      fetchProductsByFilters({
+        category: "Top Wear",
+        limit: 8,
+      })
+    );
+  }, [dispatch]);
+
   return (
-    <div>
+    <div className="space-y-12">
       <Hero />
       <GenderCollectionSection />
       <NewArrivals />
 
+      {/* Best Seller Section */}
+      {bestSeller && (
+        <section className="container mx-auto px-4">
+          <div className="text-center mb-6">
+            <span className="text-xs font-bold uppercase tracking-widest text-emerald-600">
+              Customer Favorite
+            </span>
+            <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight mt-1">
+              Best Seller
+            </h2>
+          </div>
+          <ProductDetails productId={bestSeller._id} />
+        </section>
+      )}
 
-      {/* Best Seller */}
-      <h2 className='text-3xl text-center font-bold mb-4'>Best Seller</h2>
-      <ProductDetails />
-
-
-
-      <div className='container mx-auto'>
-        <h2 className='text-3xl text-center font-bold mb-4'>Top Wears for Women</h2>
-        <ProductGrid products={placeholderProducts}/>
-      </div>
+      {/* Top Wear Collection Grid */}
+      <section className="container mx-auto px-4">
+        <div className="text-center mb-6">
+          <span className="text-xs font-bold uppercase tracking-widest text-gray-400">
+            Featured Category
+          </span>
+          <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight mt-1">
+            Trending Top Wear
+          </h2>
+        </div>
+        <ProductGrid products={products} loading={loading} />
+      </section>
 
       <FeaturedCollection />
       <FeaturesSection />
     </div>
-  )
-}
+  );
+};
 
-export default Home
+export default Home;

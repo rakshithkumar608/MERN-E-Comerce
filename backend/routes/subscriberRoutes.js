@@ -2,34 +2,31 @@ const express = require("express");
 const router = express.Router();
 const Subscriber = require("../models/Subscriber");
 
-
-//@route POST/api/subscribe
-//@desc handle newsletter subscription
-//@ access public
-router.post("/subscribe", async (req, res) => {
+const handleSubscribe = async (req, res) => {
   const { email } = req.body;
 
-  if(!email) {
-    return res.status(400).json({ message: "Email is Required "});
+  if (!email) {
+    return res.status(400).json({ message: "Email is required" });
   }
 
   try {
-    //check if the email is already subscribed
-    let subscriber = await Subscriber.findOne({ email });
+    let subscriber = await Subscriber.findOne({ email: email.toLowerCase().trim() });
 
-    if(subscriber) {
-      return res.status(400).json({ message: "emailk is already subscribed"});
+    if (subscriber) {
+      return res.status(400).json({ message: "This email is already subscribed" });
     }
 
-    // create a new subscriber
-    subscriber = new Subscriber({  email });
+    subscriber = new Subscriber({ email: email.toLowerCase().trim() });
     await subscriber.save();
 
-    res.status(201).json({ message: "Successfully subscribed to the newsletter!"});
+    res.status(201).json({ message: "Successfully subscribed to the newsletter!" });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server Error"})
+    console.error("Subscribe error:", error);
+    res.status(500).json({ message: "Server Error", error: error.message });
   }
-});
+};
+
+router.post("/", handleSubscribe);
+router.post("/subscribe", handleSubscribe);
 
 module.exports = router;

@@ -2,7 +2,7 @@ const express = require("express");
 const multer = require("multer");
 const cloudinary = require("cloudinary").v2;
 const streamifier = require("streamifier");
-require("dotenv").config();   // load env variables
+require("dotenv").config();
 
 // Cloudinary configuration
 cloudinary.config({
@@ -11,43 +11,55 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Multer setup using memory storage
 const storage = multer.memoryStorage();
-const upload = multer({ storage });
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+});
 
-// Create router
 const router = express.Router();
 
-// Route to handle image upload
 router.post("/", upload.single("image"), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: "No file uploaded" });
     }
 
-    // Function to handle the stream upload to cloudinary
-    const streamUpload = (fileBuffer) => {
-      return new Promise((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream((error, result) => {
-          if (result) {
-            resolve(result);
-          } else {
-            reject(error);
-          }
-        });
-        // Use streamifier to convert file buffer to a stream
-        streamifier.createReadStream(fileBuffer).pipe(stream);
-      });
-    };
+    // Try Cloudinary stream upload
+    try {
+      if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY) {
+        const streamUpload = (fileBuffer) => {
+          return new Promise((resolve, reject) => {
+            const stream = cloudinary.uploader.upload_stream(
+              { folder: "rabbit_ecommerce" },
+              (error, result) => {
+                if (result) {
+                  resolve(result);
+                } else {
+                  reject(error);
+                }
+              }
+            );
+            streamifier.createReadStream(fileBuffer).pipe(stream);
+          });
+        };
 
-    // Call the streamUpload function
-    const result = await streamUpload(req.file.buffer);
+        const result = await streamUpload(req.file.buffer);
+        return res.json({ imageUrl: result.secure_url });
+      }
+    } catch (cloudErr) {
+      console.warn("Cloudinary upload failed, falling back to data URL:", cloudErr.message);
+    }
 
-    // Respond with the uploaded image URL
-    res.json({ imageUrl: result.secure_url });
+    // Fallback: base64 Data URL so dev/testing always works smoothly
+    const base64Data = req.file.buffer.toString("base64");
+    const mimeType = req.file.mimetype || "image/jpeg";
+    const dataUrl = `data:${mimeType};base64,${base64Data}`;
+
+    return res.json({ imageUrl: dataUrl });
   } catch (error) {
     console.error("Upload error:", error);
-    res.status(500).json({ message: "Image upload failed", error });
+    res.status(500).json({ message: "Image upload failed", error: error.message });
   }
 });
 

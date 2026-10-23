@@ -1,23 +1,28 @@
 import axios from "axios";
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
-//Async thunk to fetch products by collection and optional filters
+const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:9000";
+
+// Async thunk to fetch products by collection and optional filters
 export const fetchProductsByFilters = createAsyncThunk(
-  "products/fetchProductsByFilters", // Added missing action type string
-  async ({
-    collection,
-    size,
-    color,
-    gender,
-    minPrice,
-    maxPrice,
-    sortBy,
-    search,
-    category,
-    material,
-    brand,
-    limit,
-  }, { rejectWithValue }) => { // Added rejectWithValue for better error handling
+  "products/fetchProductsByFilters",
+  async (
+    {
+      collection,
+      size,
+      color,
+      gender,
+      minPrice,
+      maxPrice,
+      sortBy,
+      search,
+      category,
+      material,
+      brand,
+      limit,
+    } = {},
+    { rejectWithValue }
+  ) => {
     try {
       const query = new URLSearchParams();
       if (collection) query.append("collection", collection);
@@ -33,71 +38,107 @@ export const fetchProductsByFilters = createAsyncThunk(
       if (brand) query.append("brand", brand);
       if (limit) query.append("limit", limit);
 
-      const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/products?${query.toString()}`);
+      const response = await axios.get(`${API_URL}/api/products?${query.toString()}`);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+      return rejectWithValue(
+        error.response?.data?.message || error.response?.data || error.message
+      );
     }
   }
 );
 
-//Async thunk to fetch a single product by ID
+// Async thunk to fetch a single product by ID
 export const fetchProductDetails = createAsyncThunk(
   "products/fetchProductDetails",
   async (id, { rejectWithValue }) => {
     try {
-      const response = await axios.get(
-        `${import.meta.env.VITE_BACKEND_URL}/api/products/${id}`
-      );
+      const response = await axios.get(`${API_URL}/api/products/${id}`);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+      return rejectWithValue(
+        error.response?.data?.message || error.response?.data || error.message
+      );
     }
   }
 );
 
-//Async thunk to update a product
+// Async thunk to fetch best seller product
+export const fetchBestSeller = createAsyncThunk(
+  "products/fetchBestSeller",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(`${API_URL}/api/products/best-seller`);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || error.response?.data || error.message
+      );
+    }
+  }
+);
+
+// Async thunk to fetch new arrivals
+export const fetchNewArrivals = createAsyncThunk(
+  "products/fetchNewArrivals",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(`${API_URL}/api/products/new-arrivals`);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || error.response?.data || error.message
+      );
+    }
+  }
+);
+
+// Async thunk to update a product
 export const updateProduct = createAsyncThunk(
   "products/updateProduct",
   async ({ id, productData }, { rejectWithValue }) => {
     try {
       const response = await axios.put(
-        `${import.meta.env.VITE_BACKEND_URL}/api/products/${id}`, 
+        `${API_URL}/api/products/${id}`,
         productData,
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("userToken")}`, // Fixed case: userToken
+            Authorization: `Bearer ${localStorage.getItem("userToken")}`,
           },
         }
       );
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+      return rejectWithValue(
+        error.response?.data?.message || error.response?.data || error.message
+      );
     }
   }
 );
 
-//Async thunk to fetch similar products
+// Async thunk to fetch similar products
 export const fetchSimilarProducts = createAsyncThunk(
   "products/fetchSimilarProducts",
   async ({ id }, { rejectWithValue }) => {
     try {
-      const response = await axios.get(
-        `${import.meta.env.VITE_BACKEND_URL}/api/products/similar/${id}`
-      );
+      const response = await axios.get(`${API_URL}/api/products/similar/${id}`);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+      return rejectWithValue(
+        error.response?.data?.message || error.response?.data || error.message
+      );
     }
   }
 );
 
-const productsSlice = createSlice({ // Fixed typo: productsslice -> productsSlice
+const productsSlice = createSlice({
   name: "products",
   initialState: {
     products: [],
-    selectedProduct: null, // Changed from selectedProducts to selectedProduct (singular)
-    similarProducts: [], // Added to store similar products separately
+    selectedProduct: null,
+    similarProducts: [],
+    bestSeller: null,
+    newArrivals: [],
     loading: false,
     error: null,
     filters: {
@@ -136,51 +177,60 @@ const productsSlice = createSlice({ // Fixed typo: productsslice -> productsSlic
   },
   extraReducers: (builder) => {
     builder
-      // Handle fetching products with filters
+      // Fetch products
       .addCase(fetchProductsByFilters.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(fetchProductsByFilters.fulfilled, (state, action) => {
         state.loading = false;
-        state.products = Array.isArray(action.payload) ? action.payload : []; // Fixed assignment
+        state.products = Array.isArray(action.payload) ? action.payload : [];
         state.error = null;
       })
       .addCase(fetchProductsByFilters.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload || action.error.message; // Fixed operator: - to =
+        state.error = action.payload || "Failed to fetch products";
       })
 
-      // Handle fetching single product details
+      // Fetch single product details
       .addCase(fetchProductDetails.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(fetchProductDetails.fulfilled, (state, action) => {
         state.loading = false;
-        state.selectedProduct = action.payload; // Fixed: selectedProducts -> selectedProduct
+        state.selectedProduct = action.payload;
         state.error = null;
       })
       .addCase(fetchProductDetails.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload || action.error.message;
+        state.error = action.payload || "Failed to fetch product details";
       })
 
-      // Handle update product
+      // Fetch Best Seller
+      .addCase(fetchBestSeller.fulfilled, (state, action) => {
+        state.bestSeller = action.payload;
+      })
+
+      // Fetch New Arrivals
+      .addCase(fetchNewArrivals.fulfilled, (state, action) => {
+        state.newArrivals = action.payload || [];
+      })
+
+      // Update product
       .addCase(updateProduct.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(updateProduct.fulfilled, (state, action) => {
         state.loading = false;
-        const updatedProduct = action.payload; // Fixed variable name
+        const updatedProduct = action.payload;
         const index = state.products.findIndex(
           (product) => product._id === updatedProduct._id
         );
         if (index !== -1) {
           state.products[index] = updatedProduct;
         }
-        // Also update selectedProduct if it matches
         if (state.selectedProduct && state.selectedProduct._id === updatedProduct._id) {
           state.selectedProduct = updatedProduct;
         }
@@ -188,22 +238,18 @@ const productsSlice = createSlice({ // Fixed typo: productsslice -> productsSlic
       })
       .addCase(updateProduct.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload || action.error.message;
+        state.error = action.payload || "Failed to update product";
       })
 
-      // Handle fetch similar products
+      // Similar products
       .addCase(fetchSimilarProducts.pending, (state) => {
-        state.loading = true;
         state.error = null;
       })
       .addCase(fetchSimilarProducts.fulfilled, (state, action) => {
-        state.loading = false;
-        state.similarProducts = action.payload; // Store in separate field
-        state.error = null;
+        state.similarProducts = action.payload || [];
       })
       .addCase(fetchSimilarProducts.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload || action.error.message;
+        state.error = action.payload || "Failed to fetch similar products";
       });
   },
 });
