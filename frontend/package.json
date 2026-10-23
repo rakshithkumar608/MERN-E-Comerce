@@ -8,6 +8,8 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
+   
+
   },
   "dependencies": {
     "@paypal/react-paypal-js": "^8.9.1",
