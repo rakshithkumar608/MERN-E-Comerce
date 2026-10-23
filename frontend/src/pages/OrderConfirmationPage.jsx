@@ -1,6 +1,6 @@
 import React from "react";
 import { useLocation, Link, Navigate } from "react-router-dom";
-import { FiCheckCircle, FiPackage, FiTruck, FiArrowRight } from "react-icons/fi";
+import { FiCheckCircle, FiPackage, FiTruck, FiArrowRight, FiPrinter } from "react-icons/fi";
 
 const OrderConfirmationPage = () => {
   const location = useLocation();
@@ -23,6 +23,7 @@ const OrderConfirmationPage = () => {
 
   const orderItems = order.orderItems || order.checkoutItems || [];
   const address = order.shippingAddress || {};
+  const details = order.paymentDetails || {};
 
   return (
     <div className="container mx-auto max-w-4xl py-12 px-4 sm:px-6">
@@ -33,30 +34,38 @@ const OrderConfirmationPage = () => {
           Thank You for Your Order!
         </h1>
         <p className="text-gray-600 text-sm max-w-md mx-auto">
-          Your order has been received and is being processed. A confirmation has been logged to your account.
+          Your order has been placed and confirmed. A confirmation has been logged to your account.
         </p>
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden p-6 sm:p-8 space-y-8">
-        {/* Order ID & Estimated Delivery */}
+      <div className="bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden p-6 sm:p-8 space-y-8">
+        {/* Order Reference & Delivery estimate */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-6 border-b gap-4">
           <div>
             <p className="text-xs uppercase font-bold text-gray-400 tracking-wider">
               Order Reference
             </p>
-            <h2 className="text-xl font-extrabold text-gray-900">#{order._id}</h2>
+            <h2 className="text-xl font-mono font-extrabold text-gray-900">
+              #{order._id}
+            </h2>
             <p className="text-xs text-gray-500 mt-0.5">
-              Placed on {new Date(order.createdAt || Date.now()).toLocaleDateString()}
+              Placed on {new Date(order.createdAt || Date.now()).toLocaleDateString(undefined, {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
             </p>
           </div>
 
-          <div className="bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-3 flex items-center gap-3">
-            <FiTruck className="text-emerald-700 h-5 w-5 flex-shrink-0" />
+          <div className="bg-emerald-50 border border-emerald-100 rounded-2xl px-5 py-3 flex items-center gap-3">
+            <FiTruck className="text-emerald-700 h-6 w-6 flex-shrink-0" />
             <div>
               <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-800">
                 Estimated Delivery
               </p>
-              <p className="text-sm font-bold text-emerald-900">
+              <p className="text-sm font-extrabold text-emerald-950">
                 {calculateEstimatedDelivery(order.createdAt)}
               </p>
             </div>
@@ -65,18 +74,18 @@ const OrderConfirmationPage = () => {
 
         {/* Ordered items list */}
         <div>
-          <h3 className="text-base font-bold text-gray-900 uppercase tracking-wider mb-4 flex items-center gap-2">
+          <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 flex items-center gap-2">
             <FiPackage className="text-gray-500" />
             <span>Items Ordered ({orderItems.length})</span>
           </h3>
 
-          <div className="divide-y divide-gray-100 border rounded-xl overflow-hidden">
+          <div className="divide-y divide-gray-100 border border-gray-100 rounded-2xl overflow-hidden">
             {orderItems.map((item, idx) => (
               <div key={idx} className="flex items-center gap-4 p-4 hover:bg-gray-50/50 transition">
                 <img
                   src={item.image}
                   alt={item.name}
-                  className="w-16 h-20 object-cover object-top rounded-lg border border-gray-100 flex-shrink-0"
+                  className="w-16 h-20 object-cover object-top rounded-xl border border-gray-100 flex-shrink-0"
                 />
                 <div className="flex-1 min-w-0">
                   <h4 className="text-sm font-bold text-gray-900 truncate">
@@ -86,11 +95,11 @@ const OrderConfirmationPage = () => {
                     {item.color} | {item.size}
                   </p>
                   <p className="text-xs text-gray-600 mt-1 font-medium">
-                    Qty: {item.quantity}
+                    Qty: {item.quantity} &times; ₹{Number(item.price).toLocaleString()}
                   </p>
                 </div>
                 <div className="text-right">
-                  <span className="text-sm font-bold text-gray-900">
+                  <span className="text-sm font-extrabold text-gray-900">
                     ₹{(Number(item.price) * Number(item.quantity)).toLocaleString()}
                   </span>
                 </div>
@@ -100,63 +109,83 @@ const OrderConfirmationPage = () => {
         </div>
 
         {/* Payment & Shipping Summary */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50 rounded-xl p-6 border border-gray-100">
-          <div>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50 rounded-2xl p-6 border border-gray-100">
+          <div className="space-y-1">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">
               Payment Information
             </h4>
-            <p className="text-sm font-semibold text-gray-900">
-              Method: {order.paymentMethod || "PayPal"}
+            <p className="text-sm font-bold text-gray-900">
+              Method: {order.paymentMethod || "Mock Credit Card"}
             </p>
-            <p className="text-xs text-gray-600 mt-1">
+            <p className="text-xs text-gray-600">
               Status:{" "}
               <span
-                className={`font-bold ${
+                className={`font-bold uppercase ${
                   order.isPaid ? "text-emerald-700" : "text-amber-700"
                 }`}
               >
-                {order.isPaid ? "Paid" : "Pending / Cash on Delivery"}
+                {order.isPaid ? "Paid & Verified" : "Payment on Delivery"}
               </span>
             </p>
-            <p className="text-sm font-extrabold text-gray-900 mt-3">
-              Total Paid: ₹{Number(order.totalPrice || 0).toLocaleString()}
+            {details.transactionId && (
+              <p className="text-xs font-mono text-gray-500 pt-1">
+                Ref: {details.transactionId}
+              </p>
+            )}
+            {details.last4 && (
+              <p className="text-xs text-gray-600">
+                Card: {details.cardBrand || "Card"} ending in &bull;&bull;&bull;&bull; {details.last4}
+              </p>
+            )}
+            <p className="text-sm font-extrabold text-gray-900 pt-2">
+              Total Amount: ₹{Number(order.totalPrice || 0).toLocaleString()}
             </p>
           </div>
 
-          <div>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">
-              Shipping Destination
+          <div className="space-y-1">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">
+              Delivery Address
             </h4>
-            <p className="text-sm font-semibold text-gray-900">
+            <p className="text-sm font-bold text-gray-900">
               {address.address}
             </p>
-            <p className="text-xs text-gray-600 mt-0.5">
+            <p className="text-xs text-gray-600">
               {address.city}
               {address.state ? `, ${address.state}` : ""}
               {address.zipCode ? ` - ${address.zipCode}` : ""}
             </p>
             <p className="text-xs text-gray-600">{address.country}</p>
             {address.phone && (
-              <p className="text-xs text-gray-600 mt-1">Phone: {address.phone}</p>
+              <p className="text-xs text-gray-600 pt-1">Contact: {address.phone}</p>
             )}
           </div>
         </div>
 
         {/* Navigation CTAs */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t">
-          <Link
-            to="/my-orders"
-            className="w-full sm:w-auto text-center border border-gray-300 px-6 py-3 rounded-xl text-sm font-semibold text-gray-800 hover:bg-gray-100 transition"
+          <button
+            onClick={() => window.print()}
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 border border-gray-300 px-6 py-3 rounded-xl text-sm font-semibold text-gray-800 hover:bg-gray-100 transition cursor-pointer"
           >
-            View My Orders
-          </Link>
-          <Link
-            to="/collections/all"
-            className="w-full sm:w-auto text-center bg-black text-white px-8 py-3 rounded-xl text-sm font-bold uppercase tracking-wider hover:bg-gray-800 transition flex items-center justify-center gap-2 shadow"
-          >
-            <span>Continue Shopping</span>
-            <FiArrowRight />
-          </Link>
+            <FiPrinter className="h-4 w-4" />
+            <span>Print Receipt</span>
+          </button>
+
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+            <Link
+              to="/my-orders"
+              className="w-full sm:w-auto text-center border border-gray-300 px-6 py-3 rounded-xl text-sm font-semibold text-gray-800 hover:bg-gray-100 transition"
+            >
+              Track in My Orders
+            </Link>
+            <Link
+              to="/collections/all"
+              className="w-full sm:w-auto text-center bg-black text-white px-8 py-3 rounded-xl text-sm font-bold uppercase tracking-wider hover:bg-gray-800 transition flex items-center justify-center gap-2 shadow"
+            >
+              <span>Continue Shopping</span>
+              <FiArrowRight />
+            </Link>
+          </div>
         </div>
       </div>
     </div>

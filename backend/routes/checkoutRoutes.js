@@ -6,6 +6,74 @@ const { protect } = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
+// @route POST /api/checkout/create-order
+// @desc Directly create an order with mock / gateway / COD payment
+// @access Private
+router.post("/create-order", protect, async (req, res) => {
+  const {
+    orderItems,
+    checkoutItems,
+    shippingAddress,
+    paymentMethod,
+    totalPrice,
+    isPaid,
+    paymentStatus,
+    paymentDetails,
+  } = req.body;
+
+  const rawItems = orderItems || checkoutItems;
+
+  if (!rawItems || rawItems.length === 0) {
+    return res.status(400).json({ message: "No items in order" });
+  }
+
+  try {
+    const formattedItems = rawItems.map((item) => ({
+      productId: item.productId?._id || item.productId,
+      name: item.name,
+      image: item.image,
+      price: Number(item.price),
+      size: item.size || "Standard",
+      color: item.color || "Default",
+      quantity: Number(item.quantity) || 1,
+    }));
+
+    const isOrderPaid =
+      Boolean(isPaid) ||
+      paymentStatus === "paid" ||
+      paymentStatus === "COMPLETED" ||
+      paymentMethod === "Credit Card (Mock)" ||
+      paymentMethod === "UPI (Mock)" ||
+      paymentMethod === "Net Banking (Mock)";
+
+    const newOrder = await Order.create({
+      user: req.user._id,
+      orderItems: formattedItems,
+      shippingAddress,
+      paymentMethod: paymentMethod || "Credit Card (Mock)",
+      totalPrice: Number(totalPrice),
+      isPaid: isOrderPaid,
+      paidAt: isOrderPaid ? Date.now() : undefined,
+      isDelivered: false,
+      paymentStatus: isOrderPaid ? "paid" : "pending",
+      paymentDetails: paymentDetails || {
+        status: isOrderPaid ? "paid" : "pending",
+        transactionId: `TXN_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`,
+        provider: paymentMethod || "Direct",
+      },
+      status: "Processing",
+    });
+
+    // Clear user cart
+    await Cart.findOneAndDelete({ user: req.user._id });
+
+    res.status(201).json(newOrder);
+  } catch (error) {
+    console.error("Direct order creation error:", error);
+    res.status(500).json({ message: "Server Error", error: error.message });
+  }
+});
+
 // @route POST /api/checkout
 // @desc Create a new checkout session
 // @access Private
@@ -23,11 +91,10 @@ router.post("/", protect, async (req, res) => {
       shippingAddress,
       paymentMethod: paymentMethod || "PayPal",
       totalPrice: Number(totalPrice),
-      paymentStatus: paymentMethod === "COD" || paymentMethod === "Cash on Delivery" ? "pending" : "pending",
+      paymentStatus: "pending",
       isPaid: false,
     });
 
-    console.log(`Checkout created for user: ${req.user._id}`);
     res.status(201).json(newCheckout);
   } catch (error) {
     console.error("Error creating checkout session:", error);
@@ -86,7 +153,6 @@ router.post("/:id/finalize", protect, async (req, res) => {
       return res.status(400).json({ message: "Checkout already finalized" });
     }
 
-    // Allow finalizing if paid OR if paymentMethod is Cash on Delivery
     const isCOD =
       checkout.paymentMethod === "COD" ||
       checkout.paymentMethod === "Cash on Delivery";
@@ -121,7 +187,7 @@ router.post("/:id/finalize", protect, async (req, res) => {
       checkout.finalzedAt = checkout.finalizedAt;
       await checkout.save();
 
-      // Delete the cart associated with the user
+      // Delete user cart
       await Cart.findOneAndDelete({ user: checkout.user });
 
       return res.status(201).json(finalOrder);

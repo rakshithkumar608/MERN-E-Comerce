@@ -8,6 +8,29 @@ const getUserToken = () => {
   return token ? `Bearer ${token}` : "";
 };
 
+// Async thunk to directly create an order with mock / card / COD payment
+export const createDirectOrder = createAsyncThunk(
+  "checkout/createDirectOrder",
+  async (orderData, { rejectWithValue }) => {
+    try {
+      const response = await axios.post(
+        `${API_URL}/api/checkout/create-order`,
+        orderData,
+        {
+          headers: {
+            Authorization: getUserToken(),
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || error.response?.data || error.message
+      );
+    }
+  }
+);
+
 // Async thunk to create a checkout session
 export const createCheckout = createAsyncThunk(
   "checkout/createCheckout",
@@ -98,6 +121,21 @@ const checkoutSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      // Direct order creation
+      .addCase(createDirectOrder.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createDirectOrder.fulfilled, (state, action) => {
+        state.loading = false;
+        state.order = action.payload;
+        state.error = null;
+      })
+      .addCase(createDirectOrder.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || "Failed to place order";
+      })
+
       // Create checkout
       .addCase(createCheckout.pending, (state) => {
         state.loading = true;
